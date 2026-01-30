@@ -223,30 +223,6 @@ public class AutoTransfer extends OpMode{
         }
     }
 
-    public void Launch() {
-        shooterTargetSpeed = shooter.calcVelocity(
-                Math.sqrt(
-                        (turret.distanceToBasket().getX() * turret.distanceToBasket().getX()) + (turret.distanceToBasket().getY() * turret.distanceToBasket().getY())
-                )
-        );
-        shooter.setVelocity(shooterTargetSpeed);
-        intake.setAllPower(0);
-        do {
-            gate.setPosition(Gate.OPEN);
-        }
-        while (shooter.getVelocity() < shooterTargetSpeed - Mortar.THRESH || shooter.getVelocity()>shooterTargetSpeed);
-        intake.setAllPower(1);
-        sleep(KICKER_WAIT_TIME);
-        //intake.setIntakePower(0);
-        //kicker.setPosition(Kicker.UP);
-        //intake.setIntakePower(0);
-        //sleep(500);
-        //kicker.setPosition(Kicker.DOWN);
-
-        gate.setPosition(Gate.CLOSE);
-        //intake.setIntakePower(1);
-    }
-
     public void setPathState(PathState newState) {
         pathState = newState;
         pathTimer.resetTimer();
@@ -309,5 +285,28 @@ public class AutoTransfer extends OpMode{
             Thread.currentThread().interrupt(); // Restore interrupted status
             // Optionally, log or handle the interruption
         }
+    }
+    public void Launch() {
+        shooterTargetSpeed = shooter.calcVelocity(
+                Math.sqrt(
+                        (turret.distanceToBasket().getX() * turret.distanceToBasket().getX()) + (turret.distanceToBasket().getY() * turret.distanceToBasket().getY())
+                )
+        );
+        shooter.setVelocity(shooterTargetSpeed);
+        intake.setAllPower(0);
+        do {
+            gate.setPosition(Gate.OPEN);
+        }
+        while (shooter.getVelocity() < shooterTargetSpeed - Mortar.THRESH || shooter.getVelocity()>shooterTargetSpeed);
+        intake.setAllPower(1);
+        sleep(KICKER_WAIT_TIME);
+        //intake.setIntakePower(0);
+        //kicker.setPosition(Kicker.UP);
+        //intake.setIntakePower(0);
+        //sleep(500);
+        //kicker.setPosition(Kicker.DOWN);
+
+        gate.setPosition(Gate.CLOSE);
+        //intake.setIntakePower(1);
     }
 }
