@@ -9,6 +9,7 @@ import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.hardware.Servo;
 
 import org.firstinspires.ftc.robotcore.external.navigation.Pose2D;
+import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
 
 
 import java.util.HashMap;
@@ -35,14 +36,15 @@ public class Turret {
 
     private Pose pose;
 
-    public static Pose blueBasket = new Pose(-71,-71);
-    public static Pose redBasket = new Pose(-71, 71);
+    public static Pose blueBasket = new Pose(0,144);
+    public static Pose redBasket = new Pose(144, 144);
     public static Pose curBasket;
 
     public static double angleOffset = 0;
 
     public Turret(HardwareMap hardwareMap, HashMap<String, String> config, Pose startPos) {
         //drive = new MecanumDrive(hardwareMap, startPos); // TODO: set this to whatever position auton will end at
+        follower = Constants.createFollower(hardwareMap);
         pose = startPos;
         servoTurret = hardwareMap.get(Servo.class, config.get("turret"));
         servoTurret2 = hardwareMap.get(Servo.class, config.get("turret2"));

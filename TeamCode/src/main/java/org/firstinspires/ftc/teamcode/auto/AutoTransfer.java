@@ -21,23 +21,27 @@ import org.firstinspires.ftc.teamcode.subsystems.Util;
 @Autonomous
 public class AutoTransfer extends OpMode{
 
+
     private Follower follower;
     private Timer pathTimer, opModeTimer;
+
+
 
     Util util;
     Kicker kicker;
     Mortar shooter;
     Turret turret;
-
     Intake intake;
     Gate gate;
-
     public static int KICKER_WAIT_TIME = 600;
 
     private int shooterTargetSpeed;
     private double target;
 
     ElapsedTime time1 = new ElapsedTime();
+
+
+
 
 
     public enum PathState {
@@ -62,7 +66,7 @@ public class AutoTransfer extends OpMode{
 
     PathState pathState;
 
-    private final Pose startPose = new Pose(113.93684210526318,129.4315789473684, Math.toRadians(128.118));
+    private final Pose startPose = new Pose(113.93684210526318,129.4315789473684, Math.toRadians(42.5));
     private final Pose shootPose = new Pose(96.25263157894737,83.49473684210525, Math.toRadians(0));
     private final Pose spike1 = new Pose(130, 84, Math.toRadians(0));
     private final Pose setUp2 = new Pose(96.25263157894737, 59.284210526315775, Math.toRadians(0));
@@ -165,13 +169,14 @@ public class AutoTransfer extends OpMode{
                 }//
             case SPIKE_TWO:
                 if (!follower.isBusy()) {
+                    follower.followPath(returnToShoot2, true);
                     setPathState(PathState.RETURN_SHOOT2);
                     intake.setAllPower(0);
                 }
             case RETURN_SHOOT2:
                 if (!follower.isBusy()) {
                     Launch();
-                    follower.followPath(setUpTwo, true);
+                    follower.followPath(setUpThree, true);
                     setPathState(PathState.SET_UP3);
                     intake.setAllPower(0);
                 }
@@ -184,6 +189,7 @@ public class AutoTransfer extends OpMode{
                 }
             case SPIKE_THREE:
                 if (!follower.isBusy()) {
+                    follower.followPath(returnToShoot3, true);
                     setPathState(PathState.RETURN_SHOOT3);
                     intake.setAllPower(0);
                 }
@@ -255,6 +261,15 @@ public class AutoTransfer extends OpMode{
         follower = Constants.createFollower(hardwareMap);
         // TODO add in any other init mechanisms
 
+        util = new Util();
+        kicker = new Kicker(hardwareMap, util.deviceConf);
+        shooter = new Mortar(hardwareMap, util.deviceConf);
+        turret = new Turret(hardwareMap, util.deviceConf, new Pose(64.5, 16.4, Math.toRadians(180)));
+        intake = new Intake(hardwareMap, util.deviceConf);
+        gate = new Gate(hardwareMap, util.deviceConf);
+
+        turret.setBasketPos(Turret.redBasket);
+
         buildPaths();
         follower.setPose(startPose);
     }
@@ -262,6 +277,8 @@ public class AutoTransfer extends OpMode{
     public void start() {
         opModeTimer.resetTimer();
         setPathState(pathState);
+        Turret.tracking = true;
+        shooter.setVelocity(1400);
     }
 
     @Override
@@ -274,6 +291,8 @@ public class AutoTransfer extends OpMode{
         turret.update();
         intake.update();
         gate.update();
+
+
 
         telemetry.addData("path state", pathState.toString());
         telemetry.addData("x", follower.getPose().getX());

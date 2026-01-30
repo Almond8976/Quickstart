@@ -1,18 +1,16 @@
 package org.firstinspires.ftc.teamcode.subsystems;
 
-import com.acmerobotics.roadrunner.Pose2d;
+
 import com.pedropathing.geometry.Pose;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.hardware.Servo;
 
-import org.firstinspires.ftc.teamcode.MecanumDrive;
 
 import java.util.HashMap;
 
 public class Hood {
 
     private Servo hood;
-    private MecanumDrive drive;
     private double x, y;
 
     public static boolean tracking = false;
