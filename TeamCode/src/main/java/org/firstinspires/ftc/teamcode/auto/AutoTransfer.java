@@ -37,6 +37,7 @@ public class AutoTransfer extends OpMode{
 
     private int shooterTargetSpeed;
     private double target;
+    private boolean closeGate = false;
 
     ElapsedTime time1 = new ElapsedTime();
 
@@ -304,19 +305,23 @@ public class AutoTransfer extends OpMode{
         );
         shooter.setVelocity(shooterTargetSpeed);
         intake.setAllPower(0);
-        do {
+        if (shooter.getVelocity() < shooterTargetSpeed - Mortar.THRESH || shooter.getVelocity() > shooterTargetSpeed + Mortar.THRESH) {
             gate.setPosition(Gate.OPEN);
         }
-        while (shooter.getVelocity() < shooterTargetSpeed - Mortar.THRESH || shooter.getVelocity() > shooterTargetSpeed + Mortar.THRESH);
-        intake.setAllPower(1);
-        sleep(KICKER_WAIT_TIME);
-        //intake.setIntakePower(0);
-        //kicker.setPosition(Kicker.UP);
-        //intake.setIntakePower(0);
-        //sleep(500);
-        //kicker.setPosition(Kicker.DOWN);
-
-        gate.setPosition(Gate.CLOSE);
+        else {
+            intake.setAllPower(1);
+            sleep(KICKER_WAIT_TIME);
+            //intake.setIntakePower(0);
+            //kicker.setPosition(Kicker.UP);
+            //intake.setIntakePower(0);
+            //sleep(500);
+            //kicker.setPosition(Kicker.DOWN);
+            closeGate = true;
+        }
+        if(closeGate) {
+            gate.setPosition(Gate.CLOSE);
+            closeGate = false;
+        }
         //intake.setIntakePower(1);
     }
 }
