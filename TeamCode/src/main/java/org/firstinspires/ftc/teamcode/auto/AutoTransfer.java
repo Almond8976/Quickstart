@@ -37,7 +37,7 @@ public class AutoTransfer extends OpMode{
 
     private int shooterTargetSpeed;
     private double target;
-    private boolean closeGate = false;
+    private boolean closeGate = false, stopLaunch = false;
 
     ElapsedTime time1 = new ElapsedTime();
 
@@ -88,6 +88,7 @@ public class AutoTransfer extends OpMode{
         driveStartPosShootPos = follower.pathBuilder()
                 .addPath(new BezierLine(startPose, shootPose))
                 .setLinearHeadingInterpolation(startPose.getHeading(), shootPose.getHeading())
+                .setGlobalDeceleration(5)
                 .build();
         spikeOne = follower.pathBuilder()
                 .addPath(new BezierLine(shootPose, spike1))
@@ -145,10 +146,15 @@ public class AutoTransfer extends OpMode{
             case SHOOT_PRELOAD:
                 // check is follower done its path?
                 if (!follower.isBusy()) {
-                    Launch();
-                    follower.followPath(spikeOne, true);
+                    gate.setPosition(Gate.OPEN);
                     intake.setAllPower(1);
-                    setPathState(PathState.SPIKE_ONE);
+                    sleep(KICKER_WAIT_TIME);
+                    intake.setAllPower(0);
+                    if(stopLaunch) {
+                        follower.followPath(spikeOne, true);
+                        intake.setAllPower(1);
+                        setPathState(PathState.SPIKE_ONE);
+                    }
                 }
                 break;
             case SPIKE_ONE:
@@ -298,14 +304,9 @@ public class AutoTransfer extends OpMode{
         }
     }
     public void Launch() {
-        shooterTargetSpeed = shooter.calcVelocity(
-                Math.sqrt(
-                        (turret.distanceToBasket().getX() * turret.distanceToBasket().getX()) + (turret.distanceToBasket().getY() * turret.distanceToBasket().getY())
-                )
-        );
-        shooter.setVelocity(shooterTargetSpeed);
-        intake.setAllPower(0);
+        /*
         if (shooter.getVelocity() < shooterTargetSpeed - Mortar.THRESH || shooter.getVelocity() > shooterTargetSpeed + Mortar.THRESH) {
+            intake.setAllPower(0);
             gate.setPosition(Gate.OPEN);
         }
         else {
@@ -321,7 +322,13 @@ public class AutoTransfer extends OpMode{
         if(closeGate) {
             gate.setPosition(Gate.CLOSE);
             closeGate = false;
+            stopLaunch = true;
         }
         //intake.setIntakePower(1);
+
+         */
+        stopLaunch = false;
+
+        //stopLaunch = true;
     }
 }
