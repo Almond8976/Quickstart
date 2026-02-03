@@ -31,7 +31,7 @@ public class FirstTeleOpRed extends LinearOpMode {
     public static double reverseIntakeSpeed = -.75;
     public static int maxTurretChange = 10;
     public static int kickerWaitTime = 500;
-    public static Pose resetPose = new Pose(72,72, -Math.PI/2);
+    public static Pose resetPose = new Pose(72,72,Math.toRadians(90) );
 
 
 
