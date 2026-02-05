@@ -1,13 +1,12 @@
 package org.firstinspires.ftc.teamcode.auto;
 
-
 import com.pedropathing.follower.Follower;
 import com.pedropathing.geometry.BezierLine;
 import com.pedropathing.geometry.Pose;
 import com.pedropathing.paths.PathChain;
-import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
-import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.pedropathing.util.Timer;
+import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
+import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
 import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
@@ -20,9 +19,7 @@ import org.firstinspires.ftc.teamcode.subsystems.Turret;
 import org.firstinspires.ftc.teamcode.subsystems.Util;
 
 @Autonomous
-public class AutoTransfer extends OpMode{
-
-
+public class AutoTest extends LinearOpMode {
     private Follower follower;
     private Timer pathTimer, opModeTimer;
 
@@ -43,12 +40,7 @@ public class AutoTransfer extends OpMode{
     private boolean closeGate = false, stopLaunch = false;
 
     ElapsedTime time1 = new ElapsedTime();
-
-
-
-
-
-    enum PathState {
+    public enum PathState {
         // START POSITION_END POSITION
         // DRIVE > MOVEMENT STATE
         // SHOOT > ATTEMPT TO SCORE THE ARTIFACT
@@ -86,6 +78,196 @@ public class AutoTransfer extends OpMode{
     private PathChain returnToShoot1, returnToShoot2, returnToShoot3, setUpTwo, setUpThree, setUpHuman, human, returnShootHuman;
 
 
+    @Override
+    public void runOpMode() throws InterruptedException {
+        // init all subsystems (switch to using wrappers if you want parallel movement)
+        pathState = PathState.DRIVE_START_POS_SHOOT_POS;
+        pathTimer = new Timer();
+        opModeTimer = new Timer();
+        opModeTimer.resetTimer();
+        // TODO add in any other init mechanisms
+
+        follower = Constants.createFollower(hardwareMap);
+        util = new Util();
+        kicker = new Kicker(hardwareMap, util.deviceConf);
+        shooter = new Mortar(hardwareMap, util.deviceConf);
+        turret = new Turret(hardwareMap, util.deviceConf, new Pose(64.5, 16.4, Math.toRadians(42.5)));
+        intake = new Intake(hardwareMap, util.deviceConf);
+        gate = new Gate(hardwareMap, util.deviceConf);
+        hood = new Hood(hardwareMap, util.deviceConf, new Pose(64.5, 16.4, Math.toRadians(42.5)));
+
+        turret.setBasketPos(Turret.redBasket);
+
+        buildPaths();
+        follower.setPose(startPose);
+
+        Thread update = new Thread( ()-> updateAll(turret, shooter, kicker, intake, gate, follower));
+
+        // TODO: move everything to start position (after init, before program start)
+
+
+
+        waitForStart();
+        update.start();
+        shooter.setVelocity(1420);
+        Turret.tracking = true;
+
+        switch(pathState) {
+            case DRIVE_START_POS_SHOOT_POS:
+                follower.followPath(driveStartPosShootPos, true);
+                setPathState(PathState.SHOOT_PRELOAD);
+                break;
+            case SHOOT_PRELOAD:
+                // check is follower done its path?
+                if (!follower.isBusy()) {
+                    if(opModeTimer.getElapsedTime() >= 1750 && !stopLaunch) {
+                        Launch();
+                        shootPoseCount++;
+                        follower.followPath(spikeOne, true);
+                        intake.setAllPower(1);
+                        setPathState(PathState.SPIKE_ONE);
+                    }
+                }
+                break;
+            case SPIKE_ONE:
+                if (!follower.isBusy()) {
+                    follower.followPath(returnToShoot1, true);
+                    intake.setAllPower(0);
+                    setPathState(PathState.RETURN_SHOOT1);
+                }
+                break;
+            case RETURN_SHOOT1:
+                if (!follower.isBusy()) {
+                    Launch();
+                    shootPoseCount++;
+                    telemetry.addLine("two" + opModeTimer.getElapsedTime());
+                    follower.followPath(setUpTwo, true);
+                    intake.setAllPower(0);
+                    setPathState(PathState.SET_UP2);
+                }
+                break;
+            case SET_UP2:
+                if (!follower.isBusy()) {
+                    follower.followPath(spikeTwo, true);
+                    intake.setAllPower(1);
+                    setPathState(PathState.SPIKE_TWO);
+                }
+            case SPIKE_TWO:
+                if (!follower.isBusy()) {
+                    follower.followPath(returnToShoot2, true);
+                    intake.setAllPower(0);
+                    setPathState(PathState.RETURN_SHOOT2);
+                }
+            case RETURN_SHOOT2:
+                if (!follower.isBusy()) {
+                    Launch();
+                    shootPoseCount++;
+                    follower.followPath(setUpThree, true);
+                    intake.setAllPower(0);
+                    setPathState(PathState.SET_UP3);
+                }
+                break;
+            case SET_UP3:
+                if (!follower.isBusy()) {
+                    follower.followPath(spikeThree, true);
+                    intake.setAllPower(1);
+                    setPathState(PathState.SPIKE_THREE);
+                }
+            case SPIKE_THREE:
+                if (!follower.isBusy()) {
+                    follower.followPath(returnToShoot3, true);
+                    intake.setAllPower(0);
+                    setPathState(PathState.RETURN_SHOOT3);
+                }
+            case RETURN_SHOOT3:
+                if (!follower.isBusy()) {
+                    Launch();
+                    shootPoseCount++;
+                    telemetry.addLine("four" + opModeTimer.getElapsedTime());
+                    follower.followPath(setUpHuman, true);
+                    intake.setAllPower(0);
+                    setPathState(PathState.SET_UP_HUMAN);
+                }
+            case SET_UP_HUMAN:
+                if (!follower.isBusy()) {
+                    follower.followPath(human, true);
+                    intake.setAllPower(1);
+                    setPathState(PathState.HUMAN);
+                }
+            case HUMAN:
+                if (!follower.isBusy()) {
+                    follower.followPath(returnShootHuman);
+                    setPathState(PathState.RETURN_SHOOT_HUMAN);
+                    intake.setAllPower(0);
+                }
+            case RETURN_SHOOT_HUMAN:
+                if (!follower.isBusy()) {
+                    Launch();
+                    shootPoseCount++;
+                    telemetry.addLine("five" + opModeTimer.getElapsedTime());
+                    setPathState(PathState.DONE);
+                    intake.setAllPower(0);
+                }
+            default:
+                telemetry.addLine("Auto Finished" + opModeTimer.getElapsedTime());
+                shooter.setFlyMotorPower(0);
+                shooter.setFlyMotor2Power(0);
+                break;
+        }
+
+    }
+
+    public void setPathState(PathState newState) {
+        pathState = newState;
+        pathTimer.resetTimer();
+    }
+    // Define all functions here (if you call subsystems movements from here it wont be parallel)
+
+    public void Launch() {
+        shooter.setVelocity(1420);
+        intake.setAllPower(0);
+        do {
+            gate.setPosition(Gate.OPEN);
+        }
+        while (shooter.getVelocity() < shooterTargetSpeed - Mortar.THRESH || shooter.getVelocity()>shooterTargetSpeed);
+        intake.setAllPower(1);
+        sleep(KICKER_WAIT_TIME);
+        //intake.setIntakePower(0);
+        //kicker.setPosition(Kicker.UP);
+        //intake.setIntakePower(0);
+        //sleep(500);
+        //kicker.setPosition(Kicker.DOWN);
+
+        gate.setPosition(Gate.CLOSE);
+        //intake.setIntakePower(1);
+    }
+
+    public void updateAll(Turret turret, Mortar shooter, Kicker kicker, Intake intake, Gate gate, Follower follower){
+        while (opModeInInit() || opModeIsActive())
+        {
+            shooter.update();
+            kicker.update();
+            turret.update();
+            intake.update();
+            gate.update();
+            follower.update();
+            statePathUpdate();
+
+            telemetry.addData("path state", pathState.toString());
+            telemetry.addData("x", follower.getPose().getX());
+            telemetry.addData("y", follower.getPose().getY());
+            telemetry.addData("heading", follower.getPose().getHeading());
+            telemetry.addData("Gate Position", gate.getPosition());
+            telemetry.addData("Path time", pathTimer.getElapsedTimeSeconds());
+            telemetry.addData("Follower Busy: ", follower.isBusy());
+            telemetry.addData("Target Speed", shooter.getTargetVelocity());
+            telemetry.addData("Flywheel Velocity", shooter.getVelocity());
+            telemetry.addData("Hood Position", hood.getHoodPosition());
+            telemetry.addData("shootPoseCount", shootPoseCount);
+            telemetry.addData("launchCount", ((double)launchCount/3.0));
+            telemetry.addData("LaunchIf", launchIf);
+        }
+    }
     public void buildPaths() {
         // put in coordinates for starting pose > ending pose
         driveStartPosShootPos = follower.pathBuilder()
@@ -139,7 +321,6 @@ public class AutoTransfer extends OpMode{
                 .build();
 
     }
-
     public void statePathUpdate() {
         switch(pathState) {
             case DRIVE_START_POS_SHOOT_POS:
@@ -243,113 +424,5 @@ public class AutoTransfer extends OpMode{
                 shooter.setFlyMotor2Power(0);
                 break;
         }
-    }
-
-    public void setPathState(PathState newState) {
-        pathState = newState;
-        pathTimer.resetTimer();
-    }
-
-    @Override
-    public void init() {
-        pathState = PathState.DRIVE_START_POS_SHOOT_POS;
-        pathTimer = new Timer();
-        opModeTimer = new Timer();
-        opModeTimer.resetTimer();
-        follower = Constants.createFollower(hardwareMap);
-        // TODO add in any other init mechanisms
-
-        util = new Util();
-        kicker = new Kicker(hardwareMap, util.deviceConf);
-        shooter = new Mortar(hardwareMap, util.deviceConf);
-        turret = new Turret(hardwareMap, util.deviceConf, new Pose(64.5, 16.4, Math.toRadians(42.5)));
-        intake = new Intake(hardwareMap, util.deviceConf);
-        gate = new Gate(hardwareMap, util.deviceConf);
-        hood = new Hood(hardwareMap, util.deviceConf, new Pose(64.5, 16.4, Math.toRadians(42.5)));
-
-        turret.setBasketPos(Turret.redBasket);
-
-        buildPaths();
-        follower.setPose(startPose);
-    }
-
-    public void start() {
-        opModeTimer.resetTimer();
-        setPathState(pathState);
-        Turret.tracking = true;
-        hood.setHoodPosition(Hood.closeHood);
-        //shooter.setVelocity(shooter.calcVelocity((71-20)*Math.sqrt(2)));
-        time1.reset();
-        shooter.setVelocity(1420);
-    }
-
-    @Override
-    public void loop() {
-//AUTONOMOUS
-        follower.update();
-        statePathUpdate();
-
-//SUBSYSTEMS
-        shooter.update();
-        kicker.update();
-        turret.update();
-        intake.update();
-        gate.update();
-        hood.update();
-
-//TELEMETRY
-        telemetry.addData("path state", pathState.toString());
-        telemetry.addData("x", follower.getPose().getX());
-        telemetry.addData("y", follower.getPose().getY());
-        telemetry.addData("heading", follower.getPose().getHeading());
-        telemetry.addData("Gate Position", gate.getPosition());
-        telemetry.addData("Path time", pathTimer.getElapsedTimeSeconds());
-        telemetry.addData("Follower Busy: ", follower.isBusy());
-        telemetry.addData("Target Speed", shooter.getTargetVelocity());
-        telemetry.addData("Flywheel Velocity", shooter.getVelocity());
-        telemetry.addData("Hood Position", hood.getHoodPosition());
-        telemetry.addData("shootPoseCount", shootPoseCount);
-        telemetry.addData("launchCount", ((double)launchCount/3.0));
-        telemetry.addData("LaunchIf", launchIf);
-        
-        telemetry.update();
-    }
-//    public void sleep(int t) {
-//        try {
-//            Thread.sleep(t); // Wait for 1 millisecond
-//        } catch (InterruptedException e) {
-//            Thread.currentThread().interrupt(); // Restore interrupted status
-//            // Optionally, log or handle the interruption
-//        }
-//    }
-    public void Launch() {
-        telemetry.addLine("Launching");
-        launchCount++;
-        if (shooter.getVelocity() < shooterTargetSpeed - Mortar.THRESH || shooter.getVelocity() > shooterTargetSpeed + Mortar.THRESH) {
-            intake.setAllPower(0);
-            gate.setPosition(Gate.OPEN);
-
-        }
-            intake.setAllPower(1);
-            //time1.reset();
-
-            //intake.setIntakePower(0);
-            //kicker.setPosition(Kicker.UP);
-            //intake.setIntakePower(0);
-            //sleep(500);
-            //kicker.setPosition(Kicker.DOWN);
-
-            closeGate = true;
-            telemetry.addLine("Launch");
-            launchCount++;
-        if(closeGate) {
-            gate.setPosition(Gate.CLOSE);
-            stopLaunch = true;
-            telemetry.addLine("Launch Good");
-            launchCount++;
-            launchIf++;
-            closeGate = false;
-        }
-        //intake.setIntakePower(1);
     }
 }
