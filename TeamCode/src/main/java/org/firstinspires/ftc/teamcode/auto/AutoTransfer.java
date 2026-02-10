@@ -140,7 +140,7 @@ public class AutoTransfer extends OpMode{
 
     }
 
-    public void statePathUpdate() {
+    public void statePathUpdate() throws InterruptedException {
         switch(pathState) {
             case DRIVE_START_POS_SHOOT_POS:
                 follower.followPath(driveStartPosShootPos, true);
@@ -287,7 +287,12 @@ public class AutoTransfer extends OpMode{
     public void loop() {
 //AUTONOMOUS
         follower.update();
-        statePathUpdate();
+        //TODO: auto generate, to lazy to figure out why
+        try {
+            statePathUpdate();
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
 
 //SUBSYSTEMS
         shooter.update();
@@ -322,34 +327,31 @@ public class AutoTransfer extends OpMode{
 //            // Optionally, log or handle the interruption
 //        }
 //    }
-    public void Launch() {
+    public void Launch() throws InterruptedException {
         telemetry.addLine("Launching");
         launchCount++;
-        if (shooter.getVelocity() < shooterTargetSpeed - Mortar.THRESH || shooter.getVelocity() > shooterTargetSpeed + Mortar.THRESH) {
-            intake.setAllPower(0);
-            gate.setPosition(Gate.OPEN);
+//        if (shooter.getVelocity() < shooterTargetSpeed - Mortar.THRESH || shooter.getVelocity() > shooterTargetSpeed + Mortar.THRESH) {
+//            intake.setAllPower(0);
+//            gate.setPosition(Gate.OPEN);
+//
+//        }
+        intake.setAllPower(1);
+        //time1.reset();
 
-        }
-            intake.setAllPower(1);
-            //time1.reset();
+        //intake.setIntakePower(0);
+        //kicker.setPosition(Kicker.UP);
+        //intake.setIntakePower(0);
+        //sleep(500);
+        //kicker.setPosition(Kicker.DOWN);
 
-            //intake.setIntakePower(0);
-            //kicker.setPosition(Kicker.UP);
-            //intake.setIntakePower(0);
-            //sleep(500);
-            //kicker.setPosition(Kicker.DOWN);
-
-            closeGate = true;
-            telemetry.addLine("Launch");
-            launchCount++;
-        if(closeGate) {
-            gate.setPosition(Gate.CLOSE);
-            stopLaunch = true;
-            telemetry.addLine("Launch Good");
-            launchCount++;
-            launchIf++;
-            closeGate = false;
-        }
+        wait(500);//TODO: if auto doesn't work delete wait statement and try again be warned about Gate closing to early
+        telemetry.addLine("Launch");
+        launchCount++;
+        gate.setPosition(Gate.CLOSE);
+        telemetry.addLine("Launch Good");
+        launchCount++;
+        launchIf++;
+        stopLaunch = true;
         //intake.setIntakePower(1);
     }
 }
